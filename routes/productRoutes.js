@@ -97,10 +97,32 @@ router.get("/get", async (req, res) => {
 
 router.get("/getAll", async (req, res) => {
   try {
-    const products = await Product.find();
-    res.status(200).json(products);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const products = await Product.find({})
+      .select("name price images category stock description")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .lean();
+    const totalProducts = await Product.countDocuments({});
+
+    res.json({
+      products,
+      pagination: {
+        total: totalProducts,
+        pages: Math.ceil(totalProducts / limit),
+        page,
+        limit,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error fetching products:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to fetch products", error: error.message });
   }
 });
 
