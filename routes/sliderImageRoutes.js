@@ -38,17 +38,17 @@ router.post("/images", upload.single("image"), async (req, res) => {
   }
 });
 
+// Fetch all images
 router.get("/images", async (req, res) => {
   try {
-    const images = await SliderImage.find({}).lean();
+    const images = await SliderImage.find({});
     res.status(200).json({ images: images.map((image) => image.imageUrl) });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching images.", error: error.message });
+    res.status(500).json({ message: "Error fetching images.", error });
   }
 });
 
+// Delete an image by its URL
 router.delete("/delete", async (req, res) => {
   try {
     const { imageUrl } = req.body;
@@ -67,9 +67,7 @@ router.delete("/delete", async (req, res) => {
       res.status(404).json({ success: false, message: "Image not found." });
     }
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error deleting image.", error: error.message });
+    res.status(500).json({ message: "Error deleting image.", error });
   }
 });
 
