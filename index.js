@@ -30,33 +30,10 @@ app.use(
   })
 );
 
-let cachedDb = null;
-
-async function connectToDatabase() {
-  if (cachedDb) {
-    return cachedDb;
-  }
-
-  try {
-    const connection = await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      bufferCommands: false,
-      maxPoolSize: 5,
-    });
-
-    cachedDb = connection;
-    console.log("Connected to MongoDB");
-    return connection;
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
-    throw error;
-  }
-}
-
-connectToDatabase().catch((err) =>
-  console.error("Failed to connect to MongoDB:", err)
-);
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.error("Failed to connect to MongoDB:", err));
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
