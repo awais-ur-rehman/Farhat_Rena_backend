@@ -1,11 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
-
 const verifyToken = require("../middleware/fetchUser");
 
 router.get("/getcart", verifyToken, async (req, res) => {
-  console.log("start");
   try {
     const userEmail = req.user.email;
     const user = await User.findOne({ email: userEmail });
@@ -18,12 +16,10 @@ router.get("/getcart", verifyToken, async (req, res) => {
 
     res.json({ success: true, cartData: user.cartData });
   } catch (error) {
-    console.error("Error fetching cart data:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-// Add item to cart
 router.post("/addtocart", verifyToken, async (req, res) => {
   try {
     const userEmail = req.user.email;
@@ -63,12 +59,10 @@ router.post("/addtocart", verifyToken, async (req, res) => {
 
     res.json({ success: true, cartData: user.cartData });
   } catch (error) {
-    console.error("Error adding to cart:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-// Remove item from cart
 router.post("/removefromcart", verifyToken, async (req, res) => {
   try {
     const userEmail = req.user.email;
@@ -96,7 +90,6 @@ router.post("/removefromcart", verifyToken, async (req, res) => {
 
     res.json({ success: true, cartData: user.cartData });
   } catch (error) {
-    console.error("Error removing from cart:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });

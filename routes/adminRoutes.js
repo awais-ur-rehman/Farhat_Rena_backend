@@ -47,7 +47,7 @@ router.post("/forgotpassword", async (req, res) => {
     admin.resetPasswordExpire = otpExpire;
     await admin.save();
 
-    res.status(200).json({ otp }); // Optional: remove this in production
+    res.status(200).json({ otp });
   } catch (error) {
     console.error("Error handling forgot password:", error.message);
     res.status(500).json({ message: "Internal server error" });

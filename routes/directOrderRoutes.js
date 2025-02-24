@@ -2,7 +2,6 @@ const express = require("express");
 const DirectOrder = require("../models/DirectOrder");
 const router = express.Router();
 
-// Place a direct order
 router.post("/placeDirectOrder", async (req, res) => {
   try {
     const { buyNowData, deliveryFormData, paymentDetails, status } = req.body;

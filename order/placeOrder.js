@@ -1,4 +1,4 @@
-// Import necessary modules and models
+
 const stripe = require("stripe")("your_stripe_secret_key");
 const orderModel = require("../models/orderSchema/orderSchema");
 

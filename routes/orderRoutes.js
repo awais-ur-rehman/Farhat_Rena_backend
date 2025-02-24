@@ -1,9 +1,9 @@
 const express = require("express");
 const Order = require("../models/Order");
 const router = express.Router();
+const fetchUser = require("../middleware/fetchUser");
 
-// Place an order
-router.post("/placeOrder", async (req, res) => {
+router.post("/placeOrder", fetchUser, async (req, res) => {
   try {
     const {
       cartData,
@@ -14,67 +14,125 @@ router.post("/placeOrder", async (req, res) => {
       accountInfo,
     } = req.body;
 
+    if (!cartData) {
+      return res.status(400).json({
+        success: false,
+        message: "Cart data is missing",
+        debug: { received: req.body },
+      });
+    }
+
+    if (!deliveryFormData) {
+      return res.status(400).json({
+        success: false,
+        message: "Delivery form data is missing",
+        debug: { received: req.body },
+      });
+    }
+
+    if (!accountInfo) {
+      return res.status(400).json({
+        success: false,
+        message: "Account info is missing",
+        debug: { received: req.body },
+      });
+    }
+
     const newOrder = new Order({
+      userId: req.user.id,
+      userEmail: req.user.email,
       cartData,
       deliveryFormData,
       paymentDetails,
-      status,
-      payment,
+      status: status || "processing",
+      payment: payment || false,
       accountInfo,
     });
 
-    await newOrder.save();
+    const savedOrder = await newOrder.save();
 
-    res
-      .status(201)
-      .json({ success: true, message: "Order placed successfully" });
+    // Verify the order was saved
+    const verifyOrder = await Order.findById(savedOrder._id);
+
+    res.status(201).json({
+      success: true,
+      message: "Order placed successfully",
+      orderId: savedOrder._id,
+      debug: {
+        userEmail: req.user.email,
+        orderSaved: !!verifyOrder,
+      },
+    });
   } catch (error) {
-    console.error("Error placing order:", error);
-    res.status(500).json({ success: false, message: "Error placing order" });
-  }
-});
-
-// Get all orders
-router.get("/orders", async (req, res) => {
-  try {
-    const orders = await Order.find({});
-    res.json(orders);
-  } catch (error) {
-    console.error("Error fetching orders:", error);
-    res.status(500).json({ success: false, error: "Failed to fetch orders" });
-  }
-});
-
-// Cancel an order by ID
-router.delete("/cancelOrder/:orderId", async (req, res) => {
-  try {
-    const { orderId } = req.params;
-
-    const deletedOrder = await Order.findByIdAndDelete(orderId);
-
-    if (!deletedOrder) {
-      return res.status(404).json({ success: false, error: "Order not found" });
-    }
-
-    res.json({ success: true, message: "Order canceled successfully" });
-  } catch (error) {
-    console.error("Error canceling order:", error);
     res.status(500).json({
       success: false,
-      error: "Failed to cancel order. Please try again later.",
+      message: "Error placing order",
+      error: error.message,
     });
   }
 });
 
-// Update order status
-router.post("/updateOrderStatus/:id", async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-
+router.get("/orders", fetchUser, async (req, res) => {
   try {
-    const updatedOrder = await Order.findByIdAndUpdate(
-      id,
-      { status: status },
+    const userEmail = req.user.email;
+
+    const orders = await Order.find({
+      "accountInfo.email": userEmail,
+    }).sort({ createdAt: -1 });
+
+    if (orders.length === 0) {
+      const allOrders = await Order.find({});
+    }
+
+    res.json({
+      success: true,
+      orders,
+      total: orders.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch orders",
+      error: error.message,
+    });
+  }
+});
+
+router.delete("/cancelOrder/:orderId", fetchUser, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const deletedOrder = await Order.findOneAndDelete({
+      _id: orderId,
+      "accountInfo.email": req.user.email,
+    });
+
+    if (!deletedOrder) {
+      return res.status(404).json({
+        success: false,
+        error: "Order not found or you're not authorized to cancel it",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Order canceled successfully",
+      orderId: orderId,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Failed to cancel order",
+      message: error.message,
+    });
+  }
+});
+
+router.post("/updateOrderStatus/:id", fetchUser, async (req, res) => {
+  try {
+    const updatedOrder = await Order.findOneAndUpdate(
+      { _id: req.params.id, userEmail: req.user.email },
+      { status: req.body.status },
       { new: true }
     );
 
@@ -82,10 +140,69 @@ router.post("/updateOrderStatus/:id", async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    res.status(200).json(updatedOrder);
+    res.json({ success: true, order: updatedOrder });
   } catch (error) {
-    console.error("Error updating order status:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/admin/allOrders", async (req, res) => {
+  try {
+    const orders = await Order.find({}).sort({ createdAt: -1 });
+    res.json({ success: true, orders });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Failed to fetch orders" });
+  }
+});
+
+router.get("/admin/directOrders", async (req, res) => {
+  try {
+    const directOrders = await DirectOrder.find().sort({ createdAt: -1 });
+    res.json({ success: true, orders: directOrders });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Error fetching Direct orders" });
+  }
+});
+
+router.post("/admin/updateOrder/:orderId", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      { status },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
+
+    res.json({ success: true, order: updatedOrder });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error updating order" });
+  }
+});
+
+router.delete("/admin/deleteOrder/:orderId", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const deletedOrder = await Order.findByIdAndDelete(orderId);
+
+    if (!deletedOrder) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
+
+    res.json({ success: true, message: "Order deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error deleting order" });
   }
 });
 
