@@ -18,6 +18,7 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 router.post("/images", upload.single("image"), async (req, res) => {
+  console.log("starting");
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Image file is required." });
