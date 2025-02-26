@@ -29,7 +29,12 @@ app.use(
       "https://farhat-rena-frontend-xi.vercel.app",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "auth-token"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "auth-token",
+      "user-email",
+    ],
     credentials: true,
   })
 );
