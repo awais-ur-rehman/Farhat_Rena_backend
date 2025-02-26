@@ -26,6 +26,7 @@ app.use(
       "http://localhost:3000",
       "http://localhost:5173",
       "farhat-rena-admin-sigma.vercel.app",
+      "https://farhat-rena-frontend-xi.vercel.app/",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
