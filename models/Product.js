@@ -8,18 +8,11 @@ const productSchema = new mongoose.Schema({
   tagline: { type: String },
   description: { type: String, required: true },
   tags: { type: [String] },
-  combinations: {
-    type: [
-      {
-        sizes: [String],
-        fabrics: [String],
-        price: Number,
-      },
-    ],
-    default: [],
-  },
+  sizes: { type: [String] },
+  fabrics: { type: [String] },
+  price: { type: Number },
   old_price: { type: Number },
-  new_price: { type: Number, required: true },
+  new_price: { type: Number },
   combinations: {
     type: [
       {
