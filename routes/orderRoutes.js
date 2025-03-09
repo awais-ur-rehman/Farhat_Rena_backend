@@ -14,7 +14,6 @@ const transporter = nodemailer.createTransport({
 
 const sendOrderConfirmationEmail = async (order) => {
   try {
-    // Generate order items HTML
     const orderItemsHtml = order.cartData
       .map(
         (item) => `
