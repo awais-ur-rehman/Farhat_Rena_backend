@@ -94,4 +94,32 @@ router.post("/removefromcart", verifyToken, async (req, res) => {
   }
 });
 
+// New endpoint to clear the entire cart
+router.delete("/clearcart", verifyToken, async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+
+    const user = await User.findOneAndUpdate(
+      { email: userEmail },
+      { $set: { "cartData.items": [] } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Cart cleared successfully",
+      cartData: user.cartData,
+    });
+  } catch (error) {
+    console.error("Clear cart error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 module.exports = router;
