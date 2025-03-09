@@ -123,7 +123,6 @@ const sendOrderConfirmationEmail = async (order) => {
       `,
     };
 
-    // Send the email
     await transporter.sendMail(mailOptions);
     console.log(`Order confirmation email sent to ${order.accountInfo.email}`);
     return true;
