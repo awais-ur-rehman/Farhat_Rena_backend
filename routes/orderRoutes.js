@@ -38,13 +38,11 @@ const sendOrderConfirmationEmail = async (order) => {
       )
       .join("");
 
-    // Calculate total amount
     const totalAmount = order.cartData.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
     );
 
-    // Set up email options
     const mailOptions = {
       from: '"Farhat Rena" <info@farhatrena.com>',
       to: order.accountInfo.email,
