@@ -102,7 +102,6 @@ router.post("/add", upload.array("images", 5), async (req, res) => {
   } catch (error) {
     if (req.files && req.files.length > 0) {
       try {
-        // Extract public_ids correctly from Cloudinary URLs
         const publicIds = req.files.map((file) => {
           const path = file.path;
           const splitPath = path.split("/");
