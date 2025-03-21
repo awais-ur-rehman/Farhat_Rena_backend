@@ -180,4 +180,118 @@ router.post("/removeProduct", async (req, res) => {
   }
 });
 
+router.put("/update/:id", upload.array("images", 5), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const {
+      name,
+      category,
+      new_price,
+      old_price,
+      tagline,
+      description,
+      sizes,
+      fabrics,
+      price,
+      tags,
+      combinations,
+      available,
+    } = req.body;
+
+    const updateData = {};
+
+    if (name) updateData.name = name;
+    if (category) updateData.category = category;
+    if (tagline) updateData.tagline = tagline;
+    if (description) updateData.description = description;
+    if (new_price) updateData.new_price = Number(new_price);
+    if (old_price) updateData.old_price = Number(old_price);
+    if (price) updateData.price = Number(price);
+    if (available !== undefined) updateData.available = available === "true";
+
+    if (sizes) {
+      updateData.sizes = Array.isArray(sizes)
+        ? sizes
+        : sizes.split(",").map((s) => s.trim());
+    }
+
+    if (fabrics) {
+      updateData.fabrics = Array.isArray(fabrics)
+        ? fabrics
+        : fabrics.split(",").map((f) => f.trim());
+    }
+
+    if (tags) {
+      updateData.tags = Array.isArray(tags)
+        ? tags
+        : tags.split(",").map((t) => t.trim());
+    }
+
+    if (combinations) {
+      try {
+        updateData.combinations =
+          typeof combinations === "string"
+            ? JSON.parse(combinations)
+            : combinations;
+      } catch (e) {
+        throw new Error("Invalid combinations format");
+      }
+    }
+
+    if (req.files && req.files.length > 0) {
+      const product = await Product.findById(id);
+
+      if (product && product.images && product.images.length > 0) {
+        try {
+          const publicIds = product.images.map((path) => {
+            const splitPath = path.split("/");
+            const filenameWithExtension = splitPath[splitPath.length - 1];
+            const filename = filenameWithExtension.split(".")[0];
+            return `products/${filename}`;
+          });
+
+          await Promise.all(
+            publicIds.map((id) => cloudinary.uploader.destroy(id))
+          );
+        } catch (cleanupError) {
+          console.error("Error cleaning up old images:", cleanupError);
+        }
+      }
+
+      updateData.images = req.files.map((file) => file.path);
+    }
+
+    const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    if (req.files && req.files.length > 0) {
+      try {
+        const publicIds = req.files.map((file) => {
+          const path = file.path;
+          const splitPath = path.split("/");
+          const filenameWithExtension = splitPath[splitPath.length - 1];
+          const filename = filenameWithExtension.split(".")[0];
+          return `products/${filename}`;
+        });
+
+        await Promise.all(
+          publicIds.map((id) => cloudinary.uploader.destroy(id))
+        );
+      } catch (cleanupError) {
+        console.error("Error cleaning up images:", cleanupError);
+      }
+    }
+    res.status(400).json({ error: error.message });
+  }
+});
+
 module.exports = router;
